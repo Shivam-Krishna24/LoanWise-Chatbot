@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoanWise - AI Loan Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --primary-light: #3b82f6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray-light: #f1f5f9;
+            --gray: #e2e8f0;
+            --gray-dark: #94a3b8;
+            --text: #0f172a;
+            --text-light: #64748b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--dark) 0%, #1e293b 100%);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--gray-light);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            padding: 16px 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .header-top h1 {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .header-status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .progress-step {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            background: rgba(255, 255, 255, 0.9);
+            height: 5px;
+        }
+
+        /* ===== CHAT AREA ===== */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--gray);
+            border-radius: 3px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.bot .message-bubble {
+            background: white;
+            color: var(--text);
+            border-left: 4px solid var(--primary);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border-radius: 16px 16px 4px 16px;
+        }
+
+        .agent-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .message.user .agent-label {
+            color: var(--primary);
+            text-align: right;
+        }
+
+        /* ===== CONTENT AREAS ===== */
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .quick-btn {
+            padding: 10px 14px;
+            background: white;
+            border: 1.5px solid var(--primary);
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--primary);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .quick-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .quick-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===== FORMS ===== */
+        .form-section {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+            border: 1px solid var(--gray);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-input {
+            padding: 11px 12px;
+            border: 1.5px solid var(--gray);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--gray-dark);
+        }
+
+        /* ===== TABLES ===== */
+        .emi-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .emi-table thead {
+            background: var(--gray-light);
+        }
+
+        .emi-table th,
+        .emi-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--gray);
+            color: var(--text);
+        }
+
+        .emi-table th {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 12px;
+        }
+
+        .emi-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .emi-select-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1.5px solid var(--primary);
+            color: var(--primary);
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .emi-select-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .comparison-table tr {
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .comparison-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            color: var(--text);
+        }
+
+        .comparison-table td:first-child {
+            font-weight: 700;
+            color: var(--primary);
+            width: 40%;
+            background: var(--gray-light);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--secondary);
+        }
+
+        .badge-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        /* ===== SANCTION LETTER ===== */
+        .sanction-letter {
+            border: 2px solid var(--gray);
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            background: white;
+            margin-top: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .letter-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+
+        .letter-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .letter-date {
+            font-size: 11px;
+            color: var(--gray-dark);
+            margin-top: 4px;
+        }
+
+        .letter-content {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .letter-table {
+            width: 100%;
+            margin: 12px 0;
+            border-collapse: collapse;
+        }
+
+        .letter-table tr {
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .letter-table td {
+            padding: 8px;
+            color: var(--text);
+        }
+
+        .letter-table td:first-child {
+            font-weight: 700;
+            width: 50%;
+            color: var(--primary);
+        }
+
+        .letter-terms {
+            background: rgba(37, 99, 235, 0.08);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 12px;
+            line-height: 1.6;
+            border-left: 4px solid var(--primary);
+            color: var(--text);
+        }
+
+        .letter-footer {
+            text-align: center;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--gray);
+            font-size: 12px;
+            color: var(--gray-dark);
+        }
+
+        /* ===== LOADING ===== */
+        .loading {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: bounce 1.4s infinite;
+        }
+
+        .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { opacity: 0.5; }
+            40% { opacity: 1; }
+        }
+
+        /* ===== INPUT SECTION ===== */
+        .input-section {
+            padding: 16px 20px;
+            border-top: 1px solid var(--gray);
+            background: white;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-box {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-box input {
+            flex: 1;
+            padding: 11px 14px;
+            border: 1.5px solid var(--gray);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .input-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-box input::placeholder {
+            color: var(--gray-dark);
+        }
+
+        .send-btn {
+            padding: 11px 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .message-wrapper {
+                max-width: 85%;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .form-section {
+                padding: 14px;
+            }
+
+            .input-section {
+                padding: 12px 16px;
+                gap: 8px;
+            }
+
+            .chat-messages {
+                padding: 16px;
+                gap: 10px;
+            }
+
+            .sanction-letter {
+                padding: 16px;
+            }
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--gray);
+            margin: 12px 0;
+        }
+
+        .info-card {
+            background: rgba(37, 99, 235, 0.08);
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text);
+            margin-top: 8px;
+        }
+
+        .inline-badge {
+            display: inline-block;
+            background: var(--gray-light);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-top">
+                <h1>💳 LoanWise</h1>
+                <div class="header-status"><span id="stageText">Welcome</span></div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-step active" id="dot1"></div>
+                <div class="progress-step" id="dot2"></div>
+                <div class="progress-step" id="dot3"></div>
+                <div class="progress-step" id="dot4"></div>
+                <div class="progress-step" id="dot5"></div>
+            </div>
+        </div>
+
+        <!-- CHAT CONTAINER -->
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+        </div>
+
+        <!-- INPUT SECTION -->
+        <div class="input-section">
+            <div class="input-box">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Type message..." 
+                    autocomplete="off"
+                >
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE & DATA =====
+        const STAGES = {
+            INTRO: 'intro',
+            NEW_USER_DETAILS: 'new_user_details',
+            PHONE: 'phone',
+            EMI: 'emi',
+            KYC: 'kyc',
+            ELIGIBILITY: 'eligibility',
+            SANCTION: 'sanction'
+        };
+
+        let state = {
+            stage: STAGES.INTRO,
+            applicationId: null,
+            customer: null,
+            newUserData: {
+                phone: null,
+                name: null,
+                dob: null,
+                email: null,
+                income: null,
+                address: null
+            },
+            selectedEmi: null,
+            selectedTenure: null,
+            isNewUser: false,
+            isProcessing: false,
+            currentQuestionIndex: 0,
+            questionsAsked: false
+        };
+
+        const STAGE_NAMES = {
+            intro: 'Welcome',
+            new_user_details: 'Your Details',
+            phone: 'Phone Verification',
+            emi: 'EMI Preview',
+            kyc: 'KYC Validation',
+            eligibility: 'Eligibility Check',
+            sanction: 'Sanction Letter'
+        };
+
+        const QUESTIONS = [
+            { q: 'What documents do I need?', a: 'Just Aadhaar and PAN numbers.' },
+            { q: 'How long does it take?', a: 'Around 5 minutes to get your approval.' },
+            { q: "What's the interest rate?", a: 'Depends on your profile (typically 11-14% p.a.).' },
+            { q: 'Can I prepay?', a: 'Yes, you can prepay without any penalty.' }
+        ];
+
+        // ===== API FUNCTIONS =====
+        async function apiCall(endpoint, data) {
+            try {
+                const response = await fetch(`/chatbot/api${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                return { error: error.message };
+            }
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // ===== UI FUNCTIONS =====
+        function updateStage() {
+            document.getElementById('stageText').textContent = STAGE_NAMES[state.stage];
+            
+            const stageMap = { 
+                new_user_details: 0,
+                phone: 0, 
+                emi: 1, 
+                kyc: 2, 
+                eligibility: 3, 
+                sanction: 4 
+            };
+            const index = stageMap[state.stage] || -1;
+            
+            for (let i = 0; i < 5; i++) {
+                const dot = document.getElementById(`dot${i + 1}`);
+                if (i <= index && index !== -1) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            }
+        }
+
+        function addMessage(text, agent, isUser = false, metadata = {}) {
+            const chat = document.getElementById('chatMessages');
+            const msg = document.createElement('div');
+            msg.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            if (isUser) {
+                msg.innerHTML = `<div class="message-wrapper"><div class="message-bubble">${escapeHtml(text)}</div></div>`;
+            } else {
+                let html = `<div class="message-wrapper"><div class="message-bubble">${text}</div>`;
+                
+                if (metadata.form) html += metadata.form;
+                if (metadata.table) html += metadata.table;
+                
+                if (metadata.quickReplies && metadata.quickReplies.length > 0) {
+                    html += `<div class="quick-replies">`;
+                    metadata.quickReplies.forEach(reply => {
+                        html += `<button class="quick-btn" onclick="quickReply('${escapeHtml(reply)}')">${escapeHtml(reply)}</button>`;
+                    });
+                    html += `</div>`;
+                }
+                
+                html += `<div class="agent-label">${agent}</div></div>`;
+                msg.innerHTML = html;
+            }
+
+            chat.appendChild(msg);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+        }
+
+        // ===== STAGE 0: WELCOME/INTRO =====
+        function showWelcome() {
+            state.stage = STAGES.INTRO;
+            state.isProcessing = false;
+            updateStage();
+            
+            addMessage(
+                `Welcome to LoanWise! 👋\n\nI'm your AI Loan Assistant. Get a personal loan in just 5 minutes with instant approval.\n\n✨ What would you like to do?`,
+                'LoanWise',
+                false,
+                {
+                    quickReplies: ['💰 Get Loan', '❓ Ask Questions', '📋 Check Status']
+                }
+            );
+        }
+
+        // ===== QUESTIONS SECTION =====
+        function showQuestions() {
+            state.currentQuestionIndex = 0;
+            state.questionsAsked = true;
+            showNextQuestion();
+        }
+
+        function showNextQuestion() {
+            if (state.currentQuestionIndex < QUESTIONS.length) {
+                const q = QUESTIONS[state.currentQuestionIndex];
+                state.currentQuestionIndex++;
+                
+                addMessage(q.q, 'LoanWise', false, {
+                    quickReplies: [`See Answer`, 'Skip to Next', state.currentQuestionIndex === QUESTIONS.length ? 'Ready to Apply' : 'Next Question']
+                });
+            } else {
+                addMessage('Any other questions? Ready to apply?', 'LoanWise', false, {
+                    quickReplies: ['Yes, Apply Now', 'Show Me Again', 'Exit']
+                });
+            }
+        }
+
+        // ===== STAGE 1: PHONE VERIFICATION =====
+        function askForPhone() {
+            state.stage = STAGES.PHONE;
+            state.isProcessing = false;
+            updateStage();
+            state.questionsAsked = false;
+            
+            addMessage(
+                `Perfect! Let's verify your phone number.\n\nEnter your 10-digit phone number:`,
+                'LoanWise'
+            );
+        }
+
+        async function verifyPhone(phone) {
+            if (!phone.match(/^\d{10}$/)) {
+                addMessage('❌ Please enter a valid 10-digit phone number', 'LoanWise');
+                return;
+            }
+
+            if (state.isProcessing) return;
+            state.isProcessing = true;
+
+            addMessage(phone, 'LoanWise', true);
+            addMessage('Verifying...', 'LoanWise', false, {
+                form: '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>'
+            });
+
+            const result = await apiCall('/start/', { phone });
+            
+            const messages = document.getElementById('chatMessages');
+            if (messages.lastChild) messages.lastChild.remove();
+
+            if (result.error) {
+                state.isProcessing = false;
+                addMessage(`❌ ${result.error}`, 'LoanWise');
+                return;
+            }
+
+            state.applicationId = result.application_id;
+            state.customer = result.customer;
+            state.isNewUser = result.is_new_user;
+            state.newUserData.phone = phone;
+            state.isProcessing = false;
+
+            if (result.is_new_user) {
+                state.stage = STAGES.NEW_USER_DETAILS;
+                updateStage();
+                addMessage(`Welcome to LoanWise! 👋\n\nBefore we proceed, let's collect your details to create your profile.\n\nLet's start with your full name:`, 'LoanWise');
+            } else {
+                state.stage = STAGES.EMI;
+                updateStage();
+                addMessage(
+                    `✅ Great! ${result.customer.name}\n\n🎉 You have a pre-approved loan offer:\n\n💰 Max Limit: ${formatCurrency(result.customer.pre_approved_limit)}\n📊 Interest Rate: ${result.customer.pre_approved_rate}% p.a.\n\nHow much would you like to borrow?`,
+                    'LoanWise',
+                    false,
+                    { quickReplies: ['₹100,000', '₹200,000', '₹300,000', '₹500,000'] }
+                );
+            }
+        }
+
+        // ===== NEW USER DETAILS COLLECTION =====
+        function askForName() {
+            addMessage('Please enter your full name:', 'LoanWise');
+        }
+
+        async function saveNameAndAskDOB(name) {
+            if (!name || name.length < 3) {
+                addMessage('❌ Please enter a valid name (at least 3 characters)', 'LoanWise');
+                return;
+            }
+            state.newUserData.name = name;
+            addMessage(name, 'LoanWise', true);
+            addMessage('Thanks! Now, what is your date of birth? (DD/MM/YYYY)', 'LoanWise');
+        }
+
+        async function saveDOBAndAskEmail(dob) {
+            if (!dob.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                addMessage('❌ Please enter date in DD/MM/YYYY format', 'LoanWise');
+                return;
+            }
+            state.newUserData.dob = dob;
+            addMessage(dob, 'LoanWise', true);
+            addMessage('Got it! What is your email address?', 'LoanWise');
+        }
+
+        async function saveEmailAndAskAddress(email) {
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                addMessage('❌ Please enter a valid email address', 'LoanWise');
+                return;
+            }
+            state.newUserData.email = email;
+            addMessage(email, 'LoanWise', true);
+            addMessage('Thanks! What is your address?', 'LoanWise');
+        }
+
+        async function saveAddressAndAskIncome(address) {
+            if (!address || address.length < 5) {
+                addMessage('❌ Please enter a valid address', 'LoanWise');
+                return;
+            }
+            state.newUserData.address = address;
+            addMessage(address, 'LoanWise', true);
+            addMessage('Great! What is your monthly income? (in rupees)', 'LoanWise');
+        }
+
+        async function saveIncomeAndProceed(income) {
+            const incomeNum = parseInt(income.replace(/[^0-9]/g, ''));
+        if (isNaN(incomeNum) || incomeNum < 10000) {
+            addMessage('❌ Please enter a valid monthly income (minimum ₹10,000)', 'LoanWise');
+            return;
+        }
+        state.newUserData.income = incomeNum;
+            addMessage(formatCurrency(incomeNum), 'LoanWise', true);
+
+            if (state.isProcessing) return;
+            state.isProcessing = true;
+
+            addMessage('Saving your profile...', 'LoanWise', false, {
+                form: '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>'
+            });
+
+            // Call backend API to save user details
+            const result = await apiCall('/save_new_user_details/', {
+                application_id: state.applicationId,
+                phone: state.newUserData.phone,
+                name: state.newUserData.name,
+                dob: state.newUserData.dob,
+                email: state.newUserData.email,
+                address: state.newUserData.address,
+                income: state.newUserData.income
+            });
+
+            const messages = document.getElementById('chatMessages');
+            if (messages.lastChild) messages.lastChild.remove();
+
+            if (result.error) {
+                state.isProcessing = false;
+                addMessage(`❌ Error: ${result.error}`, 'LoanWise');
+                return;
+            }
+
+            // Update customer info from response
+            state.customer = result.customer;
+            state.isProcessing = false;
+            state.stage = STAGES.EMI;
+            updateStage();
+            newUserStep = 0;
+
+            // Show pre-approved offer with buttons
+            addMessage(
+                result.message,
+                'LoanWise',
+                false,
+                { quickReplies: ['₹100,000', '₹150,000', '₹200,000', '₹250,000', '₹300,000'] }
+            );
+        }
+
+        // ===== STAGE 2: EMI PREVIEW =====
+        async function selectAmount(amountStr) {
+            const amount = parseInt(amountStr.replace(/[^0-9]/g, ''));
+
+            if (amount > state.customer.pre_approved_limit) {
+                addMessage(
+                    `❌ Amount exceeds your limit of ${formatCurrency(state.customer.pre_approved_limit)}. Please choose a lower amount.`,
+                    'LoanWise'
+                );
+                return;
+            }
+
+            addMessage(`I want to borrow ${formatCurrency(amount)}`, 'LoanWise', true);
+
+            const tenures = [12, 24, 36];
+            let table = '<table class="emi-table"><thead><tr><th>Tenure</th><th>EMI/Month</th><th>Total</th><th></th></tr></thead><tbody>';
+
+            tenures.forEach(tenure => {
+                const monthlyRate = state.customer.pre_approved_rate / 12 / 100;
+                const emi = Math.round(amount * (monthlyRate * Math.pow(1 + monthlyRate, tenure)) / (Math.pow(1 + monthlyRate, tenure) - 1));
+                const total = emi * tenure;
+                
+                table += `<tr>
+                    <td>${tenure} mo</td>
+                    <td><strong>${formatCurrency(emi)}</strong></td>
+                    <td>${formatCurrency(total)}</td>
+                    <td><button class="emi-select-btn" onclick="selectEMI(${amount}, ${tenure}, ${emi})">Pick</button></td>
+                </tr>`;
+            });
+
+            table += '</tbody></table>';
+
+            addMessage(
+                `💵 Here are your EMI options for ${formatCurrency(amount)}:`,
+                'LoanWise',
+                false,
+                { table: table }
+            );
+        }
+
+        async function selectEMI(amount, tenure, emi) {
+            state.selectedEmi = emi;
+            state.selectedTenure = tenure;
+
+            const result = await apiCall('/emi/', {
+                application_id: state.applicationId,
+                amount: amount,
+                tenure: tenure
+            });
+
+            addMessage(`${tenure} months, EMI ${formatCurrency(emi)}/month`, 'LoanWise', true);
+
+            state.stage = STAGES.KYC;
+            updateStage();
+
+            const kycForm = `
+                <div class="form-section">
+                    <div class="form-group">
+                        <label class="form-label">Aadhaar Number</label>
+                        <input type="text" class="form-input" id="aadhaar" placeholder="12345678901234" maxlength="12" inputmode="numeric">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PAN Number</label>
+                        <input type="text" class="form-input" id="pan" placeholder="ABCDE1234P" maxlength="10">
+                    </div>
+                    <button class="send-btn" style="width: 100%; margin-top: 8px;" onclick="submitKYC()">Submit KYC</button>
+                </div>
+            `;
+
+            addMessage(
+                `🔐 Now let's verify your identity.\n\nProvide your Aadhaar and PAN numbers:`,
+                'LoanWise',
+                false,
+                { form: kycForm }
+            );
+        }
+
+        async function submitKYC() {
+            const aadhar = document.getElementById('aadhaar')?.value.trim() || '';
+            const pan = document.getElementById('pan')?.value.trim().toUpperCase() || '';
+
+            if (!aadhar || !pan) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            const result = await apiCall('/kyc/', {
+                application_id: state.applicationId,
+                aadhar: aadhar,
+                pan: pan
+            });
+
+            addMessage(`Aadhaar: ${aadhar} | PAN: ${pan}`, 'LoanWise', true);
+
+            if (result.success) {
+                addMessage('✅ ' + result.message, 'LoanWise');
+                state.stage = STAGES.ELIGIBILITY;
+                updateStage();
+
+                setTimeout(() => {
+                    addMessage('Checking your eligibility...', 'LoanWise', false, {
+                        form: '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>'
+                    });
+
+                    setTimeout(() => {
+                        showEligibilityForm();
+                    }, 2000);
+                }, 500);
+            } else {
+                addMessage('❌ ' + result.message, 'LoanWise');
+            }
+        }
+
+        function showEligibilityForm() {
+            const messages = document.getElementById('chatMessages');
+            if (messages.lastChild) messages.lastChild.remove();
+
+            const incomeForm = `
+                <div class="form-section">
+                    <div class="form-group">
+                        <label class="form-label">Monthly Income (₹)</label>
+                        <input type="number" class="form-input" id="income" placeholder="50000" min="10000" inputmode="numeric">
+                    </div>
+                    <button class="send-btn" style="width: 100%; margin-top: 8px;" onclick="submitEligibility()">Check Eligibility</button>
+                </div>
+            `;
+
+            addMessage('📊 Enter your monthly income to check eligibility:', 'LoanWise', false, {
+                form: incomeForm
+            });
+        }
+
+        async function submitEligibility() {
+            const income = document.getElementById('income')?.value.trim() || '';
+
+            if (!income || parseInt(income) < 10000) {
+                alert('Please enter valid monthly income');
+                return;
+            }
+
+            const result = await apiCall('/eligibility/', {
+                application_id: state.applicationId,
+                monthly_income: parseInt(income)
+            });
+
+            addMessage(`₹${parseInt(income).toLocaleString('en-IN')}`, 'LoanWise', true);
+
+            const table = `
+                <table class="comparison-table">
+                    <tr>
+                        <td>Credit Score</td>
+                        <td><span class="status-badge badge-success">${result.credit_score}/900</span></td>
+                    </tr>
+                    <tr>
+                        <td>Monthly Income</td>
+                        <td>${formatCurrency(result.monthly_income)}</td>
+                    </tr>
+                    <tr>
+                        <td>Loan EMI</td>
+                        <td>${formatCurrency(state.selectedEmi)}</td>
+                    </tr>
+                    <tr>
+                        <td>FOIR Ratio</td>
+                        <td>${result.foir.toFixed(1)}%</td>
+                    </tr>
+                    <tr>
+                        <td>Decision</td>
+                        <td><span class="status-badge ${result.decision === 'approved' ? 'badge-success' : 'badge-error'}">${result.decision.toUpperCase()}</span></td>
+                    </tr>
+                </table>
+            `;
+
+            addMessage(result.message, 'LoanWise', false, {
+                table: table,
+                quickReplies: result.decision === 'approved' ? ['✅ Get Sanction Letter', 'Exit'] : ['Try Again']
+            });
+
+            state.stage = STAGES.SANCTION;
+            updateStage();
+        }
+
+        // ===== STAGE 5: SANCTION LETTER =====
+        async function generateSanctionLetter() {
+            addMessage('Generating your sanction letter...', 'LoanWise', false, {
+                form: '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>'
+            });
+
+            const result = await apiCall('/sanction/', { application_id: state.applicationId });
+
+            document.getElementById('chatMessages').lastChild.remove();
+
+            addMessage(result.message, 'LoanWise', false, { table: result.letter_html });
+
+            addMessage(
+                '🎉 Congratulations!\n\nYour loan has been approved. Next steps:\n✅ Sanction letter sent to your email\n⏱️ Funds will be transferred within 24 hours\n💾 Check email for details',
+                'LoanWise',
+                false,
+                { quickReplies: ['✅ Close', 'Support'] }
+            );
+        }
+
+        // ===== MESSAGE HANDLERS =====
+        function quickReply(text) {
+            addMessage(text, 'LoanWise', true);
+
+            if (text.includes('Get Loan') || text.includes('Apply')) {
+                askForPhone();
+            } else if (text.includes('Ask Question')) {
+                showQuestions();
+            } else if (text.includes('See Answer')) {
+                const q = QUESTIONS[state.currentQuestionIndex - 1];
+                addMessage(q.a, 'LoanWise');
+                setTimeout(() => {
+                    addMessage('Want to see more questions?', 'LoanWise', false, {
+                        quickReplies: ['Next Question', 'Ready to Apply', 'Show All']
+                    });
+                }, 300);
+            } else if (text.includes('Next Question') || text.includes('Skip')) {
+                showNextQuestion();
+            } else if (text.includes('Ready') || text.includes('Yes, Apply')) {
+                askForPhone();
+            } else if (text.includes('Get Sanction')) {
+                generateSanctionLetter();
+            } else if (text.includes('Close') || text.includes('Exit') || text.includes('Start Over')) {
+                location.reload();
+            } else if (text.includes('₹')) {
+                selectAmount(text);
+            } else if (text.match(/^\d{10}$/)) {
+                verifyPhone(text);
+            } else if (state.stage === STAGES.NEW_USER_DETAILS) {
+                handleNewUserInput(text);
+            }
+        }
+
+        let newUserStep = 0;
+
+        function handleNewUserInput(text) {
+            if (newUserStep === 0) {
+                saveNameAndAskDOB(text);
+                newUserStep = 1;
+            } else if (newUserStep === 1) {
+                saveDOBAndAskEmail(text);
+                newUserStep = 2;
+            } else if (newUserStep === 2) {
+                saveEmailAndAskAddress(text);
+                newUserStep = 3;
+            } else if (newUserStep === 3) {
+                saveAddressAndAskIncome(text);
+                newUserStep = 4;
+            } else if (newUserStep === 4) {
+                saveIncomeAndProceed(text);
+                newUserStep = 0;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+
+            if (!text || state.isProcessing) return;
+
+            input.value = '';
+
+            if (state.stage === STAGES.PHONE) {
+                if (text.match(/^\d{10}$/)) {
+                    verifyPhone(text);
+                } else {
+                    addMessage(text, 'LoanWise', true);
+                    addMessage('❌ Please enter a 10-digit phone number', 'LoanWise');
+                }
+            } else if (state.stage === STAGES.NEW_USER_DETAILS) {
+                addMessage(text, 'LoanWise', true);
+                handleNewUserInput(text);
+            } else if (state.stage === STAGES.EMI) {
+                if (text.match(/[\d,₹]+/)) {
+                    selectAmount(text);
+                } else {
+                    addMessage(text, 'LoanWise', true);
+                }
+            }
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !state.isProcessing) sendMessage();
+        });
+
+        window.addEventListener('load', () => {
+            showWelcome();
+            document.getElementById('userInput').focus();
+        });
+    </script>
+</body>
+</html>
